@@ -21,8 +21,11 @@ import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
 import fr.nansty.geogame.R
+import fr.nansty.geogame.geofence.GEOFENCE_ID_AKATOR
+import fr.nansty.geogame.geofence.GeofenceManager
 import fr.nansty.geogame.location.LocationData
 import fr.nansty.geogame.location.LocationLiveData
+import fr.nansty.geogame.poi.AKATOR
 import fr.nansty.geogame.poi.Poi
 import kotlinx.android.synthetic.main.activity_main.*
 import timber.log.Timber
@@ -37,6 +40,7 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
     private lateinit var map: GoogleMap
     private lateinit var locationLiveData: LocationLiveData
     private lateinit var userMarker: Marker
+    private lateinit var geofenceManager: GeofenceManager
 
     private var firsLocation = true
 
@@ -53,6 +57,8 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
         mapFragment.getMapAsync(this)
 
         supportFragmentManager.beginTransaction().replace(R.id.content, mapFragment).commit()
+
+        geofenceManager = GeofenceManager(this)
 
         locationLiveData = LocationLiveData(this)
         locationLiveData.observe(this, Observer { handleLocationData(it!!) })
@@ -83,6 +89,9 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
                 state.pois?.let {pois ->
                     for (poi in pois){
                         addPoiToMapMarker(poi, map)
+                        if (poi.title == AKATOR){
+                            geofenceManager.createGeofence(poi, 10000.0f, GEOFENCE_ID_AKATOR)
+                        }
                     }
                 }
                 return
@@ -171,6 +180,7 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
     }
 
     private fun refreshPoisFromCurrentLocation() {
+        geofenceManager.removeAllGeofences()
         map.clear()
         viewModel.loadPois(userMarker.position.latitude, userMarker.position.longitude)
     }
